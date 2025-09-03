@@ -6,10 +6,17 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=lucky
 PKG_VERSION:=2.18.6
 PKG_RELEASE:=1
-PKGARCH:=all 
-LUCKY_CONF_DIR := /etc/config/lucky.daji
-LUCKY_TMP_BACKUP := /tmp/luckyconfdir
 
+PKG_LICENSE:=GPL-3.0-only
+PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=GDY666 <gdy666@foxmail.com>
+
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_HASH:=skip
+
+# ---------------------------
+# 架构映射
+# ---------------------------
 ifeq ($(ARCH),mipsel)
 	LUCKY_ARCH:=mipsle_softfloat
 endif
@@ -42,13 +49,9 @@ ifeq ($(ARCH),aarch64)
 	LUCKY_ARCH:=arm64
 endif
 
-PKG_LICENSE:=GPL-3.0-only
-PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=GDY666 <gdy666@foxmail.com>
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_HASH:=skip
-
+# ---------------------------
+# 包定义
+# ---------------------------
 include $(INCLUDE_DIR)/package.mk
 
 define Package/$(PKG_NAME)
@@ -60,35 +63,44 @@ define Package/$(PKG_NAME)
 endef
 
 define Package/$(PKG_NAME)/description
-  Main functions of Lucky: ipv4/ipv6 portforward,ddns,IOT wake on lan ,reverse proxy and more...
+  Main functions of Lucky: ipv4/ipv6 portforward, DDNS, IoT wake on LAN,
+  reverse proxy and more...
 endef
 
-
-
-
+# ---------------------------
+# 下载 + 解压
+# ---------------------------
 define Build/Prepare
-	[ ! -f $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz ] && wget https://github.com/gdy666/lucky/releases/download/v$(PKG_VERSION)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -O $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz
-	tar -xzvf $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -C $(PKG_BUILD_DIR)
-endef
-
-
-
-define Package/$(PKG_NAME)/conffiles
-/etc/config/lucky
+	mkdir -p $(PKG_BUILD_DIR)
+	[ ! -f $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz ] && \
+		wget https://github.com/gdy666/lucky/releases/download/v$(PKG_VERSION)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -O $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz
+	tar -xzf $(PKG_BUILD_DIR)/$(PKG_NAME)_$(PKG_VERSION)_Linux_$(LUCKY_ARCH).tar.gz -C $(PKG_BUILD_DIR)
 endef
 
 define Build/Compile
 endef
 
+# ---------------------------
+# 配置文件
+# ---------------------------
+define Package/$(PKG_NAME)/conffiles
+/etc/config/lucky
+endef
+
+# ---------------------------
+# 安装
+# ---------------------------
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/init.d/
 	$(INSTALL_DIR) $(1)/etc/config/
+
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/lucky $(1)/usr/bin/lucky
 	$(INSTALL_BIN) ./files/lucky.init $(1)/etc/init.d/lucky
 	$(INSTALL_CONF) $(CURDIR)/files/luckyuci $(1)/etc/config/lucky
 endef
 
-
-
+# ---------------------------
+# 编译
+# ---------------------------
 $(eval $(call BuildPackage,$(PKG_NAME)))
